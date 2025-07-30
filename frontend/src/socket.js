@@ -7,8 +7,10 @@ const getSocketUrl = () => {
   ) {
     return "http://localhost:5000";
   }
-  return undefined; // In production, connects to same host
+  // in production, point at your Render backend:
+  return "https://live-polling-system-2-gv26.onrender.com";
 };
+
 
 const socket = io(getSocketUrl(), {
   transports: ["websocket"],
