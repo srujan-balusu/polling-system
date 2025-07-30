@@ -7,10 +7,16 @@
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": { "distDir": "dist" }
+    },
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
+    { "src": "/socket.io/(.*)", "dest": "/api/socket.js" },
+    { "src": "/api/(.*)",       "dest": "/api/$1.js" },
     { "handle": "filesystem" },
-    { "src": "/.*",       "dest": "/index.html" }
+    { "src": "/.*",              "dest": "/index.html" }
   ]
 }
