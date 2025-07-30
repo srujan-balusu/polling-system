@@ -51,7 +51,7 @@ const LoginPage = () => {
           >
             <p>I'm a Student</p>
             <span>
-              Lorem Ipsum is simply dummy text of the printing and typesetting industry
+            who can submit answers and view live poll results in real-time.
             </span>
             {selectedRole === "student" && (
               <input
