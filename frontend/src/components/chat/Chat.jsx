@@ -27,31 +27,38 @@ const Chat = ({ messages, newMessage, onMessageChange, onSendMessage }) => {
         {messages.length === 0 ? (
           <div>No messages yet</div>
         ) : (
-          messages.map((msg, index) => (
-            <div
-              key={index}
-              className={msg.user === username ? "current-user" : "other-user"}
-              style={{
-                alignSelf: msg.user === username ? "flex-end" : "flex-start",
-                marginBottom: "10px",
-                fontSize: "10px",
-              }}
-            >
-              <span style={{ marginRight: "5px" }}>
-                {msg.user === username ? "You" : msg.user}:
-              </span>
-              <span
+          messages.map((msg, index) => {
+            const sender = msg.user || "Unknown";
+            if (sender === "Guest") return null; // ✅ Skip Guest messages
+
+            const isCurrentUser = sender === username;
+
+            return (
+              <div
+                key={index}
+                className={isCurrentUser ? "current-user" : "other-user"}
                 style={{
-                  wordWrap: "break-word",
-                  whiteSpace: "pre-wrap",
-                  display: "inline-block",
-                  maxWidth: "80%",
+                  alignSelf: isCurrentUser ? "flex-end" : "flex-start",
+                  marginBottom: "10px",
+                  fontSize: "10px",
                 }}
               >
-                {msg.text}
-              </span>
-            </div>
-          ))
+                <span style={{ marginRight: "5px", fontWeight: "bold" }}>
+                  {isCurrentUser ? "You" : sender}:
+                </span>
+                <span
+                  style={{
+                    wordWrap: "break-word",
+                    whiteSpace: "pre-wrap",
+                    display: "inline-block",
+                    maxWidth: "80%",
+                  }}
+                >
+                  {msg.text}
+                </span>
+              </div>
+            );
+          })
         )}
       </div>
       <Form.Group className="mt-2">
@@ -72,7 +79,7 @@ const Chat = ({ messages, newMessage, onMessageChange, onSendMessage }) => {
         className="mt-2"
         style={{
           borderRadius: "8px",
-          border:"none",
+          border: "none",
           fontSize: "10px",
           background: "rgba(90, 102, 209, 1)",
         }}

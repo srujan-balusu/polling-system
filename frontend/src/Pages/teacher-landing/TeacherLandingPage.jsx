@@ -4,18 +4,18 @@ import "./TeacherLandingPage.css";
 import socket from "../../socket";
 import { useNavigate } from "react-router-dom";
 import eyeIcon from "../../assets/eye.svg";
+import ChatPopover from "../../components/chat/ChatPopover"; // Add chat
 
 const TeacherLandingPage = () => {
   const [question, setQuestion] = useState("");
   const [options, setOptions] = useState([{ id: 1, text: "", correct: null }]);
   const [timer, setTimer] = useState("60");
   const [error, setError] = useState("");
-  const [pollCreateError, setPollCreateError] = useState(""); // NEW
+  const [pollCreateError, setPollCreateError] = useState("");
   const navigate = useNavigate();
   const username = sessionStorage.getItem("username");
 
   useEffect(() => {
-    // Listen for poll create errors from backend
     socket.on("poll-create-error", (msg) => {
       setPollCreateError(msg);
       setTimeout(() => setPollCreateError(""), 3500);
@@ -24,7 +24,6 @@ const TeacherLandingPage = () => {
   }, []);
 
   const handleQuestionChange = (e) => setQuestion(e.target.value);
-
   const handleTimerChange = (e) => setTimer(e.target.value);
 
   const handleOptionChange = (index, value) => {
@@ -73,10 +72,12 @@ const TeacherLandingPage = () => {
 
   const askQuestion = () => {
     if (validateForm()) {
-      let pollData = {
+      const duration = Number(timer);
+      const validDuration = isNaN(duration) || duration <= 0 ? 60 : duration;
+      const pollData = {
         question,
         options: options.map((o) => o.text),
-        duration: Number(timer),
+        duration: validDuration,
       };
       socket.emit("create_poll", pollData);
       navigate("/teacher-poll");
@@ -89,6 +90,7 @@ const TeacherLandingPage = () => {
 
   return (
     <>
+      <ChatPopover /> {/* Add chat */}
       <button
         className="btn rounded-pill ask-question px-4 m-2"
         onClick={handleViewPollHistory}
@@ -96,6 +98,7 @@ const TeacherLandingPage = () => {
         <img src={eyeIcon} alt="" />
         View Poll history
       </button>
+
       <div className="container my-4 w-75 ms-5">
         <button className="btn btn-sm intervue-btn mb-3">
           <img src={stars} alt="Poll Icon" /> Intervue Poll
@@ -111,24 +114,25 @@ const TeacherLandingPage = () => {
           You'll have the ability to create and manage polls, ask questions, and
           monitor your students' responses in real-time.
         </p>
+
         {error && <div className="alert alert-danger">{error}</div>}
         {pollCreateError && (
           <div className="alert alert-warning">{pollCreateError}</div>
         )}
+
         <div className="mb-4">
           <div className="d-flex justify-content-between pb-3">
             <label htmlFor="question" className="form-label">
               Enter your question
             </label>
-            <select
-              className="form-select w-auto ms-3"
+            <input
+              type="number"
+              min="1"
+              className="form-control w-auto ms-3"
               value={timer}
               onChange={handleTimerChange}
-            >
-              <option value="60">60 seconds</option>
-              <option value="30">30 seconds</option>
-              <option value="90">90 seconds</option>
-            </select>
+              placeholder="Duration (sec)"
+            />
           </div>
           <input
             type="text"
@@ -138,9 +142,10 @@ const TeacherLandingPage = () => {
             rows="3"
             maxLength="100"
             placeholder="Type your question..."
-          ></input>
+          />
           <div className="text-end text-muted mt-1">{question.length}/100</div>
         </div>
+
         <div className="mb-4">
           <div className="d-flex justify-content-between pb-3">
             <label className="form-label">Edit Options</label>
@@ -163,7 +168,7 @@ const TeacherLandingPage = () => {
                   name={`correct-${index}`}
                   checked={option.correct === true}
                   onChange={() => handleCorrectToggle(index, true)}
-                  required="required"
+                  required
                 />
                 <label className="form-check-label">Yes</label>
               </div>
@@ -174,13 +179,14 @@ const TeacherLandingPage = () => {
                   name={`correct-${index}`}
                   checked={option.correct === false}
                   onChange={() => handleCorrectToggle(index, false)}
-                  required="required"
+                  required
                 />
                 <label className="form-check-label">No</label>
               </div>
             </div>
           ))}
         </div>
+
         <button className="btn add-options" onClick={addOption}>
           + Add More option
         </button>

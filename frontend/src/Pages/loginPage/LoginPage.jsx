@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
   const [selectedRole, setSelectedRole] = useState(null);
-  const [studentName, setStudentName] = useState("");
   const navigate = useNavigate();
 
   const selectRole = (role) => {
@@ -14,16 +13,11 @@ const LoginPage = () => {
 
   const continueToPoll = () => {
     if (selectedRole === "teacher") {
-      // Simple: fixed teacher login, no backend needed!
       sessionStorage.setItem("username", "teacher");
       navigate("/teacher-home-page");
     } else if (selectedRole === "student") {
-      if (!studentName.trim()) {
-        alert("Please enter your name as student.");
-        return;
-      }
-      // Store student name, use this as the unique name in session
-      sessionStorage.setItem("username", studentName.trim());
+      const uniqueID = "student-" + crypto.randomUUID();  // safer unique ID
+      sessionStorage.setItem("username", uniqueID);
       navigate("/student-home-page");
     } else {
       alert("Please select a role.");
@@ -51,19 +45,15 @@ const LoginPage = () => {
           >
             <p>I'm a Student</p>
             <span>
-            who can submit answers and view live poll results in real-time.
+              who can submit answers and view live poll results in real-time.
             </span>
             {selectedRole === "student" && (
-              <input
-                type="text"
-                className="form-control mt-2"
-                placeholder="Enter your name"
-                value={studentName}
-                onChange={e => setStudentName(e.target.value)}
-                style={{ fontSize: 12 }}
-              />
+              <p className="mt-2 text-muted" style={{ fontSize: 12 }}>
+                A unique ID will be assigned to you automatically.
+              </p>
             )}
           </div>
+
           <div
             className={`role-btn ${selectedRole === "teacher" ? "active" : ""}`}
             onClick={() => selectRole("teacher")}

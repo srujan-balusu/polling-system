@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Button, Popover, OverlayTrigger, Tab, Nav } from "react-bootstrap";
-import socket from "../../socket"; // Use shared socket
+import socket from "../../socket";
 import "./Chat.css";
 import chatIcon from "../../assets/chat.svg";
 
@@ -14,29 +14,31 @@ const ChatPopover = () => {
   const role = username.startsWith("teacher") ? "teacher" : "student";
 
   useEffect(() => {
-    // Announce join
     socket.emit("join-chat", { username });
 
-    // Listen for chat messages
-    socket.on("chat-message", (msg) => {
+    const handleChatMessage = (msg) => {
       setMessages((prev) => [...prev, msg]);
-      setTimeout(() => chatWindowRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
-    });
+      setTimeout(() => {
+        chatWindowRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 50);
+    };
 
-    // Listen for participants update
-    socket.on("participants-update", (list) => setParticipants(list));
+    const handleParticipantsUpdate = (list) => setParticipants(list);
 
-    // Listen for kick out (if backend sends 'kicked')
-    socket.on("kicked", () => {
+    const handleKicked = () => {
       alert("You have been kicked out by the teacher.");
       sessionStorage.removeItem("username");
       window.location.href = "/";
-    });
+    };
+
+    socket.on("chat-message", handleChatMessage);
+    socket.on("participants-update", handleParticipantsUpdate);
+    socket.on("kicked", handleKicked);
 
     return () => {
-      socket.off("chat-message");
-      socket.off("participants-update");
-      socket.off("kicked");
+      socket.off("chat-message", handleChatMessage);
+      socket.off("participants-update", handleParticipantsUpdate);
+      socket.off("kicked", handleKicked);
     };
   }, [username]);
 
@@ -44,9 +46,9 @@ const ChatPopover = () => {
     if (newMessage.trim()) {
       const msg = {
         username,
-        message: newMessage,
+        message: newMessage.trim(),
         role,
-        timestamp: new Date().toLocaleTimeString(),
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       socket.emit("chat-message", msg);
       setNewMessage("");
@@ -70,22 +72,24 @@ const ChatPopover = () => {
             </tr>
           </thead>
           <tbody>
-            {participants.map((p, idx) => (
-              <tr key={idx}>
-                <td>{p}</td>
-                {role === "teacher" && (
-                  <td>
-                    <button
-                      style={{ fontSize: "10px" }}
-                      onClick={() => handleKickOut(p)}
-                      className="btn btn-link text-danger"
-                    >
-                      Kick Out
-                    </button>
-                  </td>
-                )}
-              </tr>
-            ))}
+            {participants
+              .filter(p => p !== "Guest" && p !== username) // ✅ Filter out "Guest" and current user
+              .map((p, idx) => (
+                <tr key={idx}>
+                  <td>{p}</td>
+                  {role === "teacher" && (
+                    <td>
+                      <button
+                        style={{ fontSize: "10px" }}
+                        onClick={() => handleKickOut(p)}
+                        className="btn btn-link text-danger"
+                      >
+                        Kick Out
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
           </tbody>
         </table>
       )}
@@ -93,7 +97,7 @@ const ChatPopover = () => {
   );
 
   const popover = (
-    <Popover id="chat-popover" style={{ width: "370px", fontSize: "12px" }}>
+    <Popover id="chat-popover" style={{ width: "370px", maxWidth: "90vw", fontSize: "12px" }}>
       <Popover.Body style={{ height: "370px" }}>
         <Tab.Container activeKey={tabKey} onSelect={setTabKey}>
           <Nav variant="underline">
@@ -147,7 +151,12 @@ const ChatPopover = () => {
                   onKeyDown={e => { if (e.key === "Enter") handleSendMessage(); }}
                   style={{ fontSize: "12px" }}
                 />
-                <Button className="ms-2" size="sm" onClick={handleSendMessage}>
+                <Button
+                  className="ms-2"
+                  size="sm"
+                  onClick={handleSendMessage}
+                  disabled={!newMessage.trim()}
+                >
                   Send
                 </Button>
               </div>

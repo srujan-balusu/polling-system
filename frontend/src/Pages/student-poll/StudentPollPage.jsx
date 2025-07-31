@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import socket from "../../socket"; // Use your shared socket!
+import socket from "../../socket";
 import "./StudentPollPage.css";
 import stopwatch from "../../assets/stopwatch.svg";
 import ChatPopover from "../../components/chat/ChatPopover";
@@ -36,7 +36,6 @@ const StudentPollPage = () => {
     }
   };
 
-  // Kick handling
   useEffect(() => {
     socket.on("kicked", () => {
       setKickedOut(true);
@@ -46,16 +45,9 @@ const StudentPollPage = () => {
     return () => socket.off("kicked");
   }, [navigate]);
 
-  // Register student join (with username & pollId)
   useEffect(() => {
     const username = sessionStorage.getItem("username");
-    if (username && pollId) {
-      socket.emit("student-join", { name: username, pollId });
-    }
-  }, [pollId]);
 
-  // Handle poll and voting events
-  useEffect(() => {
     const pollCreatedHandler = (pollData) => {
       setPollQuestion(pollData.question);
       setPollOptions(
@@ -68,7 +60,12 @@ const StudentPollPage = () => {
       setSubmitted(false);
       setSelectedOption(null);
       setTimeLeft(pollData.duration);
-      setPollId(pollData._id || pollData.id);
+      const pid = pollData._id || pollData.id;
+      setPollId(pid);
+
+      if (username && pid) {
+        socket.emit("student-join", { name: username, pollId: pid });
+      }
     };
 
     const voteReceivedHandler = ({ pollId: votedPollId, votes: votesArr }) => {
@@ -97,7 +94,6 @@ const StudentPollPage = () => {
     };
   }, [pollId, pollOptions]);
 
-  // Timer
   useEffect(() => {
     if (timeLeft > 0 && !submitted) {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -160,16 +156,11 @@ const StudentPollPage = () => {
                       <div
                         key={option.id}
                         className={`list-group-item rounded m-1 ${
-                          selectedOption === option.text
-                            ? "border option-border"
-                            : ""
+                          selectedOption === option.text ? "border option-border" : ""
                         }`}
                         style={{
                           padding: "10px",
-                          cursor:
-                            submitted || timeLeft === 0
-                              ? "not-allowed"
-                              : "pointer",
+                          cursor: submitted || timeLeft === 0 ? "not-allowed" : "pointer",
                         }}
                         onClick={() => {
                           if (!submitted && timeLeft > 0) {
@@ -189,8 +180,7 @@ const StudentPollPage = () => {
                             <span className="text-right">
                               {Math.round(
                                 calculatePercentage(votes[option.text] || 0)
-                              )}
-                              %
+                              )}%
                             </span>
                           )}
                         </div>
@@ -200,9 +190,7 @@ const StudentPollPage = () => {
                               className="progress-bar progress-bar-bg"
                               role="progressbar"
                               style={{
-                                width: `${calculatePercentage(
-                                  votes[option.text] || 0
-                                )}%`,
+                                width: `${calculatePercentage(votes[option.text] || 0)}%`,
                               }}
                               aria-valuenow={votes[option.text] || 0}
                               aria-valuemin="0"
@@ -216,7 +204,7 @@ const StudentPollPage = () => {
                 </div>
               </div>
               {!submitted && selectedOption && timeLeft > 0 && (
-                <div className="d-flex  justify-content-end align-items-center">
+                <div className="d-flex justify-content-end align-items-center">
                   <button
                     type="submit"
                     className="btn continue-btn my-3 w-25"
