@@ -2,24 +2,30 @@ const express = require("express");
 const http = require("http");
 const cors = require("cors");
 const { Server } = require("socket.io");
+const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
+
+// Update this to your deployed frontend URL
+const FRONTEND_URL = "https://polling-system-3-gsxu.onrender.com";
 
 const io = new Server(server, {
   cors: {
     origin:
       process.env.NODE_ENV === "production"
-        ? "https://your-frontend-url.onrender.com" // 👈 Replace with your actual frontend URL
-        : "http://localhost:5173", // dev: React runs separately
+        ? FRONTEND_URL
+        : "http://localhost:5173",
     methods: ["GET", "POST"]
   }
 });
 
+// In-memory state
 let polls = [];
 let connectedStudents = {};
 let chatParticipants = new Set();
 
+// --- SOCKET.IO EVENTS ---
 io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
 
@@ -141,7 +147,16 @@ io.on("connection", (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+// --- Serve React static build in production ---
+if (process.env.NODE_ENV === "production") {
+  const frontendPath = path.join(__dirname, "../frontend/dist"); // Vite default build output
+  app.use(express.static(frontendPath));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(frontendPath, "index.html"));
+  });
+}
+
+const PORT = process.env.PORT || 10000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
