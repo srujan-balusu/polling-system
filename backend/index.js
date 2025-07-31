@@ -2,7 +2,6 @@ const express = require("express");
 const http = require("http");
 const cors = require("cors");
 const { Server } = require("socket.io");
-const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
@@ -11,23 +10,20 @@ const io = new Server(server, {
   cors: {
     origin:
       process.env.NODE_ENV === "production"
-        ? undefined // allow same host in production
+        ? "https://your-frontend-url.onrender.com" // 👈 Replace with your actual frontend URL
         : "http://localhost:5173", // dev: React runs separately
     methods: ["GET", "POST"]
   }
 });
 
-// In-memory state
 let polls = [];
 let connectedStudents = {};
 let chatParticipants = new Set();
 
-// --- SOCKET.IO EVENTS ---
 io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
 
   socket.on("check-can-create-poll", () => {
-    console.log("[backend] Received check-can-create-poll");
     const activePoll = polls.find(p => p.isActive);
     if (activePoll) {
       const allAnswered = Object.values(connectedStudents).every(stu =>
@@ -50,7 +46,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("create_poll", ({ question, options, duration }) => {
-    console.log("[backend] Creating new poll:", question);
     const poll = {
       id: Date.now().toString(),
       question,
@@ -145,14 +140,6 @@ io.on("connection", (socket) => {
     console.log("Client disconnected:", socket.id);
   });
 });
-
-// Serve React static build in production
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "build")));
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "build", "index.html"));
-  });
-}
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
